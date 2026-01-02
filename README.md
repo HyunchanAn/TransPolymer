@@ -49,6 +49,10 @@ $ git clone https://github.com/ChangwenXu98/TransPolymer.git
 $ cd TransPolymer
 ```
 
+> [!NOTE]
+> **For Collaborators:** Large binary files (e.g., `*.dll`, `*.lib` from PyTorch) are excluded from the repository to keep it lightweight. Please follow the installation steps above to set up your local environment. These files will be automatically installed with the required libraries.
+
+
 ### Dataset
 
 The pretraining dataset is adopted from the paper ["PI1M: A Benchmark Database for Polymer Informatics"](https://pubs.acs.org/doi/10.1021/acs.jcim.0c00726). Data augmentation is applied by augmenting each sequence to five. Pretraining data with smaller sizes are obtained by randomly picking up data entries from PI1M dataset.

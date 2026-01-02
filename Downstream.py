@@ -344,8 +344,13 @@ def main(finetune_config):
 
     else:
         print("Train Test Split")
-        train_data = pd.read_csv(finetune_config['train_file'])
-        test_data = pd.read_csv(finetune_config['test_file'])
+        train_data = pd.read_csv(finetune_config['train_file'], header=None)
+        train_data.iloc[:, 1] = pd.to_numeric(train_data.iloc[:, 1], errors='coerce')
+        train_data.dropna(subset=[train_data.columns[1]], inplace=True)
+
+        test_data = pd.read_csv(finetune_config['test_file'], header=None)
+        test_data.iloc[:, 1] = pd.to_numeric(test_data.iloc[:, 1], errors='coerce')
+        test_data.dropna(subset=[test_data.columns[1]], inplace=True)
 
         if finetune_config['aug_flag']:
             print("Data Augmentation")

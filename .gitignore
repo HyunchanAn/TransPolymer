@@ -1,0 +1,31 @@
+# Ignore virtual environment
+# Ignore virtual environment
+.venv/
+venv/
+env/
+
+# Ignore large binary files
+*.dll
+*.lib
+*.so
+*.exe
+*.obj
+
+# Ignore Python cache
+__pycache__/
+
+# Ignore user-uploaded database file
+수성 실험 데이터베이스_250401부터.accdb
+
+# Ignore model checkpoints
+ckpt/
+
+# Ignore experiment runs
+runs/
+
+# Ignore large data files
+PI1M.csv
+PI1M_v2.csv
+
+# Ignore data directory
+data/

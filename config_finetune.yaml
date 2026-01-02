@@ -1,5 +1,5 @@
 CV_flag: False                                      # whether to use cross-validation
-add_vocab_flag: True                             # whether to add supplementary vocab
+add_vocab_flag: False                             # whether to add supplementary vocab
 LLRD_flag: False                                    # whether to use layer-wise lr decay
 aug_flag: False                                     # whether to apply data augmentation
 aug_special_flag: False                            # whether to augment copolymer SMILES
@@ -16,7 +16,7 @@ best_model_path: 'ckpt/PE_I_best_model.pt'          # best model save path
 k: 5                                                # k-fold cross-validation
 blocksize: 411                                      # max length of sequences after tokenization
 batch_size: 32                                      # batch size
-num_epochs: 20                                      # total number of epochs
+num_epochs: 3                                      # total number of epochs
 warmup_ratio: 0.05                                  # warmup ratio
 drop_rate: 0.1                                      # dropout
 lr_rate: 0.00005                                    # initial lr for LLRD and pretrained model lr otherwise
