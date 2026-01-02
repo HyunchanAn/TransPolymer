@@ -436,9 +436,8 @@ if __name__ == "__main__":
     print(finetune_config)
 
     """Device"""
-    # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    device = torch.device("cpu")
-    print(f"DEBUG: Using device: {device}")
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print(f"Using device: {device}")
 
     if finetune_config['model_indicator'] == 'pretrain':
         print("Use the pretrained model")
