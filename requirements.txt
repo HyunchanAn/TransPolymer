@@ -1,0 +1,14 @@
+torch
+transformers
+rdkit
+pandas
+scikit-learn
+tensorboard
+torchmetrics
+PyYAML
+packaging
+seaborn
+opentsne
+fairscale
+regex
+openpyxl

@@ -10,7 +10,8 @@ import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader
 from torch.nn.utils.clip_grad import clip_grad_norm
 
-from transformers import AdamW, get_linear_schedule_with_warmup, RobertaModel, RobertaConfig, RobertaTokenizer
+from torch.optim import AdamW
+from transformers import get_linear_schedule_with_warmup, RobertaModel, RobertaConfig, RobertaTokenizer
 
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report, multilabel_confusion_matrix
@@ -131,6 +132,7 @@ def train(model, optimizer, scheduler, loss_fn, train_dataloader, device):
     model.train()
 
     for step, batch in enumerate(train_dataloader):
+        if step == 0: print("DEBUG: First batch loaded!")
         input_ids = batch["input_ids"].to(device)
         attention_mask = batch["attention_mask"].to(device)
         prop = batch["prop"].to(device).float()
@@ -434,8 +436,9 @@ if __name__ == "__main__":
     print(finetune_config)
 
     """Device"""
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    #device = torch.device("cpu")
+    # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cpu")
+    print(f"DEBUG: Using device: {device}")
 
     if finetune_config['model_indicator'] == 'pretrain':
         print("Use the pretrained model")
