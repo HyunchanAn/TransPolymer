@@ -1,0 +1,27 @@
+
+# Common
+data_aug: False
+
+# Dataset
+input_file: 'data/train_Tg.csv'
+test_file: 'data/test_Tg.csv'
+train_path: 'data/train_Tg.csv'
+test_path: 'data/test_Tg.csv'
+vocab_sup_file: 'vocab/vocab_sup_PE_I.csv'
+add_vocab_flag: False
+
+# Model
+num_epochs: 20
+blocksize: 128
+batch_size: 4
+lr_rate: 0.00005
+lr_rate_reg: 0.0001
+drop_rate: 0.1
+checkpoint_dir: 'ckpt'
+model_path: 'ckpt/pretrain_model.pt'
+best_model_path: 'ckpt/Tg_best_model.pt'
+tolerance: 5
+
+# Training
+cross_val_flag: False
+num_workers: 0
