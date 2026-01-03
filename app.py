@@ -123,9 +123,9 @@ with col1:
         mol = Chem.MolFromSmiles(smiles_input)
         if mol is None:
             st.error(txt["invalid_smiles"])
+            if 'results' in st.session_state:
+                del st.session_state['results']
         else:
-            st.image(Draw.MolToImage(mol, size=(400, 300)), caption="Molecular Structure")
-            
             with st.spinner(txt["analyzing"]):
                 encoding = tokenizer(
                     str(smiles_input),
@@ -141,17 +141,41 @@ with col1:
                 attention_mask = encoding["attention_mask"].to(device)
                 
                 with torch.no_grad():
+                    # Get prediction
                     pred_normalized = model(input_ids, attention_mask)
                     prediction = scaler.inverse_transform(pred_normalized.cpu().numpy())[0][0]
+                    
+                    # Get attention
                     outputs = model.PretrainedModel(input_ids=input_ids, attention_mask=attention_mask, output_attentions=True)
                     attentions = outputs.attentions
             
-            st.metric(txt["metric_label"], f"{prediction:.6f}")
-            st.session_state['results'] = (prediction, attentions, input_ids)
+            # Store everything needed for display in session state
+            st.session_state['results'] = {
+                'prediction': prediction,
+                'attentions': attentions,
+                'input_ids': input_ids,
+                'smiles': smiles_input
+            }
+
+    # --- Persistent Display Block ---
+    if 'results' in st.session_state:
+        res = st.session_state['results']
+        # Show warning if input SMILES has changed since last prediction
+        if res['smiles'] != smiles_input:
+            st.warning("⚠️ Input SMILES has changed. Click 'Predict' to update results.")
+        
+        mol = Chem.MolFromSmiles(res['smiles'])
+        if mol:
+            st.image(Draw.MolToImage(mol, size=(400, 300)), caption="Molecular Structure")
+        st.metric(txt["metric_label"], f"{res['prediction']:.6f}")
+
 
 # --- Attention Visualization ---
 if 'results' in st.session_state:
-    prediction, attentions, input_ids = st.session_state['results']
+    res = st.session_state['results']
+    prediction = res['prediction']
+    attentions = res['attentions']
+    input_ids = res['input_ids']
     
     with col2:
         st.subheader(txt["attn_header"])
