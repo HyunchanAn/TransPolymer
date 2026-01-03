@@ -3,7 +3,7 @@
 torch
 torchvision
 torchaudio
-transformers
+transformers==4.44.2
 rdkit
 pandas
 scikit-learn
