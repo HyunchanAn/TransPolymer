@@ -11,7 +11,7 @@ train_file: 'data/train_PE_I.csv'                   # train file path
 test_file: 'data/test_PE_I.csv'                     # test file path if cross-validation is not used
 model_path: 'ckpt/pretrain.pt'                      # pretrain model path
 save_path: 'ckpt/PE_I_train.pt'                     # checkpoint path
-best_model_path: 'ckpt/PE_I_best_model.pt'          # best model save path
+best_model_path: 'ckpt/model_conductivity_best.pt'          # best model save path
 
 k: 5                                                # k-fold cross-validation
 blocksize: 128                                      # max length of sequences after tokenization

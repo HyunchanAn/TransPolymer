@@ -1,27 +1,28 @@
+CV_flag: False                                      # whether to use cross-validation
+add_vocab_flag: False                             # whether to add supplementary vocab
+LLRD_flag: False                                    # whether to use layer-wise lr decay
+aug_flag: False                                     # whether to apply data augmentation
+aug_special_flag: False                            # whether to augment copolymer SMILES
+model_indicator: 'pretrain'                        # whether to use pretrained model
+aug_indicator:                                     # number of augmentation per SMILES. If no limitation, assign the indicator with None (leave it blank).
 
-# Common
-data_aug: False
+vocab_sup_file: 'vocab/vocab_sup_PE_I.csv'           # supplementary vocab file path
+train_file: 'data/train_Tg.csv'                   # train file path
+test_file: 'data/test_Tg.csv'                     # test file path if cross-validation is not used
+model_path: 'ckpt/pretrain.pt'                      # pretrain model path
+save_path: 'ckpt/model_tg_train.pt'                 # checkpoint path
+best_model_path: 'ckpt/model_tg_best.pt'          # best model save path
 
-# Dataset
-input_file: 'data/train_Tg.csv'
-test_file: 'data/test_Tg.csv'
-train_path: 'data/train_Tg.csv'
-test_path: 'data/test_Tg.csv'
-vocab_sup_file: 'vocab/vocab_sup_PE_I.csv'
-add_vocab_flag: False
-
-# Model
-num_epochs: 20
-blocksize: 128
-batch_size: 4
-lr_rate: 0.00005
-lr_rate_reg: 0.0001
-drop_rate: 0.1
-checkpoint_dir: 'ckpt'
-model_path: 'ckpt/pretrain_model.pt'
-best_model_path: 'ckpt/Tg_best_model.pt'
-tolerance: 5
-
-# Training
-cross_val_flag: False
-num_workers: 0
+k: 5                                                # k-fold cross-validation
+blocksize: 128                                      # max length of sequences after tokenization
+batch_size: 4                                      # batch size
+num_epochs: 20                                      # total number of epochs
+warmup_ratio: 0.05                                  # warmup ratio
+drop_rate: 0.1                                      # dropout
+lr_rate: 0.00005                                    # learning rate
+lr_rate_reg: 0.0001                                 # learning rate of regression head
+weight_decay: 0.01                                  # weight decay
+hidden_dropout_prob: 0.1                            # hidden layer dropout
+attention_probs_dropout_prob: 0.1                   # attention dropout
+tolerance: 5                                        # tolerance of no improvement in performance before early stop
+num_workers: 0                                      # number of workers when loading data

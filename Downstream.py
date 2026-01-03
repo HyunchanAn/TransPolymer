@@ -431,8 +431,17 @@ def main(finetune_config):
 
 
 if __name__ == "__main__":
-
-    finetune_config = yaml.load(open("config_finetune.yaml", "r"), Loader=yaml.FullLoader)
+    # Allow specifying config file via command line
+    config_file = "config_finetune.yaml"
+    if len(sys.argv) > 1:
+        # Simple check for --config argument
+        for i, arg in enumerate(sys.argv):
+            if arg == "--config" and i + 1 < len(sys.argv):
+                config_file = sys.argv[i+1]
+                break
+    
+    print(f"Loading config from: {config_file}")
+    finetune_config = yaml.load(open(config_file, "r"), Loader=yaml.FullLoader)
     print(finetune_config)
 
     """Device"""
