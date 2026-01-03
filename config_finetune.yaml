@@ -24,5 +24,5 @@ lr_rate_reg: 0.0001                                 # learning rate of regressio
 weight_decay: 0.01                                  # weight decay
 hidden_dropout_prob: 0.1                            # hidden layer dropout
 attention_probs_dropout_prob: 0.1                   # attention dropout
-tolerance: 1                                        # tolerance of no improvement in performance before early stop
+tolerance: 5                                        # tolerance of no improvement in performance before early stop
 num_workers: 0                                      # number of workers when loading data
