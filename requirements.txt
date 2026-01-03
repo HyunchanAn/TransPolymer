@@ -13,3 +13,6 @@ opentsne
 fairscale
 regex
 openpyxl
+streamlit
+matplotlib
+seaborn
