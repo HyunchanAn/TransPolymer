@@ -1,8 +1,13 @@
+# Add project root and utils to path to find local modules
+import os
+import sys
+project_root = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(project_root)
+sys.path.append(os.path.join(project_root, "utils"))
+
 import pandas as pd
 import numpy as np
-import sys
 import yaml
-
 from tqdm.auto import tqdm
 
 import torch

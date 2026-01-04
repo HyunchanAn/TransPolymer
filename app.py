@@ -40,7 +40,7 @@ LANGUAGES = {
             "Tc": "Thermal Cond (Tc) [W/mK]",
             "Density": "Density [g/cm³]",
             "Rg": "Radius of Gyration (Rg) [Å]",
-            "Conductivity": "Conductivity [S/m]"
+            "Conductivity": "Ionic Conductivity [S/cm]"
         },
         "footer": "Powered by TransPolymer 🧬 | Deep Learning based Polymer Informatics"
     },
@@ -64,7 +64,7 @@ LANGUAGES = {
             "Tc": "열전도도 (Tc) [W/mK]",
             "Density": "밀도 (Density) [g/cm³]",
             "Rg": "회전 반경 (Rg) [Å]",
-            "Conductivity": "전도도 (Conductivity) [S/m]"
+            "Conductivity": "이온 전도도 (Ionic Cond.) [S/cm]"
         },
         "footer": "TransPolymer 🧬 | 딥러닝 기반 고분자 물성 예측 시스템"
     }
