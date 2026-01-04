@@ -107,7 +107,7 @@ def roberta_base_AdamW_LLRD(model, lr, weight_decay):
 """Model"""
 
 class DownstreamRegression(nn.Module):
-    def __init__(self, drop_rate=0.1):
+    def __init__(self, num_outputs=1, drop_rate=0.1):
         super(DownstreamRegression, self).__init__()
         self.PretrainedModel = deepcopy(PretrainedModel)
         self.PretrainedModel.resize_token_embeddings(len(tokenizer))
@@ -116,7 +116,7 @@ class DownstreamRegression(nn.Module):
             nn.Dropout(drop_rate),
             nn.Linear(self.PretrainedModel.config.hidden_size, self.PretrainedModel.config.hidden_size),
             nn.SiLU(),
-            nn.Linear(self.PretrainedModel.config.hidden_size, 1)
+            nn.Linear(self.PretrainedModel.config.hidden_size, num_outputs)
         )
 
     def forward(self, input_ids, attention_mask):
@@ -127,68 +127,133 @@ class DownstreamRegression(nn.Module):
 
 """Train"""
 
+"""Masked MSE Loss for handling NaNs in Multi-task"""
+def masked_mse_loss(outputs, targets):
+    mask = ~torch.isnan(targets)
+    if not mask.any():
+        return torch.tensor(0.0, device=outputs.device, requires_grad=True)
+    diff = outputs[mask] - targets[mask]
+    return (diff**2).mean()
+
 def train(model, optimizer, scheduler, loss_fn, train_dataloader, device):
 
     model.train()
 
     for step, batch in enumerate(train_dataloader):
-        if step == 0: print("DEBUG: First batch loaded!")
         input_ids = batch["input_ids"].to(device)
         attention_mask = batch["attention_mask"].to(device)
         prop = batch["prop"].to(device).float()
+        
+        if step == 0: 
+            print(f"DEBUG: First batch loaded! Shape: ids={input_ids.shape}, prop={prop.shape}")
+        
         optimizer.zero_grad()
         outputs = model(input_ids, attention_mask).float()
-        loss = loss_fn(outputs.squeeze(), prop.squeeze())
+        
+        # Use Masked Loss for MTL
+        loss = masked_mse_loss(outputs, prop)
+        
         loss.backward()
         optimizer.step()
         scheduler.step()
 
     return None
 
-def test(model, loss_fn, train_dataloader, test_dataloader, device, scaler, optimizer, scheduler, epoch):
+def test(model, loss_fn, train_dataloader, test_dataloader, device, scaler, optimizer, scheduler, epoch, target_cols=None):
 
-    r2score = R2Score()
+    r2score = R2Score().to(device)
     train_loss = 0
     test_loss = 0
-    # count = 0
     model.eval()
+    
+    # Default target list for single property
+    if target_cols is None:
+        target_cols_list = ["Property"]
+    else:
+        target_cols_list = target_cols
+
     with torch.no_grad():
-        train_pred, train_true, test_pred, test_true = torch.tensor([]), torch.tensor([]), torch.tensor(
-            []), torch.tensor([])
+        train_pred_list, train_true_list = [], []
+        test_pred_list, test_true_list = [], []
 
         for step, batch in enumerate(train_dataloader):
             input_ids = batch["input_ids"].to(device)
             attention_mask = batch["attention_mask"].to(device)
             prop = batch["prop"].to(device).float()
             outputs = model(input_ids, attention_mask).float()
-            outputs = torch.from_numpy(scaler.inverse_transform(outputs.cpu().reshape(-1, 1)))
-            prop = torch.from_numpy(scaler.inverse_transform(prop.cpu().reshape(-1, 1)))
-            loss = loss_fn(outputs.squeeze(), prop.squeeze())
+            
+            # Masked loss for reporting
+            loss = masked_mse_loss(outputs, prop)
             train_loss += loss.item() * len(prop)
-            train_pred = torch.cat([train_pred.to(device), outputs.to(device)])
-            train_true = torch.cat([train_true.to(device), prop.to(device)])
+            
+            # Inverse transform needs to handle multi-column
+            # Reshape to 2D if single property to keep scaler happy
+            out_np = outputs.cpu().numpy()
+            prop_np = prop.cpu().numpy()
+            if len(out_np.shape) == 1: out_np = out_np.reshape(-1, 1)
+            if len(prop_np.shape) == 1: prop_np = prop_np.reshape(-1, 1)
+            
+            outputs_inv = torch.from_numpy(scaler.inverse_transform(out_np)).to(device)
+            prop_inv = torch.from_numpy(scaler.inverse_transform(prop_np)).to(device)
+            
+            train_pred_list.append(outputs_inv)
+            train_true_list.append(prop_inv)
 
-        train_loss = train_loss / len(train_pred.flatten())
-        r2_train = r2score(train_pred.flatten().to("cpu"), train_true.flatten().to("cpu")).item()
-        print("train RMSE = ", np.sqrt(train_loss))
-        print("train r^2 = ", r2_train)
+        train_pred = torch.cat(train_pred_list)
+        train_true = torch.cat(train_true_list)
+        train_loss = train_loss / len(train_pred)
+        
+        # Calculate R2 per property
+        r2_train_per_prop = []
+        for i in range(len(target_cols_list)):
+            mask = ~torch.isnan(train_true[:, i])
+            if mask.any():
+                r2 = r2score(train_pred[mask, i], train_true[mask, i]).item()
+                r2_train_per_prop.append(max(0, r2)) # Clamp to 0 for stability
+            else:
+                r2_train_per_prop.append(0.0)
+        
+        r2_train = np.mean(r2_train_per_prop)
+        print(f"train RMSE = {np.sqrt(train_loss):.4f}, train avg R2 = {r2_train:.4f}")
 
         for step, batch in enumerate(test_dataloader):
             input_ids = batch["input_ids"].to(device)
             attention_mask = batch["attention_mask"].to(device)
             prop = batch["prop"].to(device).float()
             outputs = model(input_ids, attention_mask).float()
-            outputs = torch.from_numpy(scaler.inverse_transform(outputs.cpu().reshape(-1, 1)))
-            prop = torch.from_numpy(scaler.inverse_transform(prop.cpu().reshape(-1, 1)))
-            loss = loss_fn(outputs.squeeze(), prop.squeeze())
+            
+            loss = masked_mse_loss(outputs, prop)
             test_loss += loss.item() * len(prop)
-            test_pred = torch.cat([test_pred.to(device), outputs.to(device)])
-            test_true = torch.cat([test_true.to(device), prop.to(device)])
+            
+            out_np = outputs.cpu().numpy()
+            prop_np = prop.cpu().numpy()
+            if len(out_np.shape) == 1: out_np = out_np.reshape(-1, 1)
+            if len(prop_np.shape) == 1: prop_np = prop_np.reshape(-1, 1)
+            
+            outputs_inv = torch.from_numpy(scaler.inverse_transform(out_np)).to(device)
+            prop_inv = torch.from_numpy(scaler.inverse_transform(prop_np)).to(device)
+            
+            test_pred_list.append(outputs_inv)
+            test_true_list.append(prop_inv)
 
-        test_loss = test_loss / len(test_pred.flatten())
-        r2_test = r2score(test_pred.flatten().to("cpu"), test_true.flatten().to("cpu")).item()
-        print("test RMSE = ", np.sqrt(test_loss))
-        print("test r^2 = ", r2_test)
+        test_pred = torch.cat(test_pred_list)
+        test_true = torch.cat(test_true_list)
+        test_loss = test_loss / len(test_pred)
+        
+        r2_test_per_prop = []
+        print("\nProperty Metrics:")
+        for i, col in enumerate(target_cols_list):
+            mask = ~torch.isnan(test_true[:, i])
+            if mask.any():
+                r2 = r2score(test_pred[mask, i], test_true[mask, i]).item()
+                mse = torch.mean((test_pred[mask, i] - test_true[mask, i])**2).item()
+                print(f"  - {col}: R2={r2:.4f}, RMSE={np.sqrt(mse):.4f}")
+                r2_test_per_prop.append(r2)
+            else:
+                r2_test_per_prop.append(0.0)
+        
+        r2_test = np.mean(r2_test_per_prop)
+        print(f"test RMSE = {np.sqrt(test_loss):.4f}, test avg R2 = {r2_test:.4f}\n")
 
     writer.add_scalar("Loss/train", train_loss, epoch)
     writer.add_scalar("r^2/train", r2_train, epoch)
@@ -196,7 +261,7 @@ def test(model, loss_fn, train_dataloader, test_dataloader, device, scaler, opti
     writer.add_scalar("r^2/test", r2_test, epoch)
 
     state = {'model': model.state_dict(), 'optimizer': optimizer.state_dict(), 'scheduler': scheduler.state_dict(),
-             'epoch': epoch}
+             'epoch': epoch, 'target_cols': target_cols}
     torch.save(state, finetune_config['save_path'])
 
     return train_loss, test_loss, r2_train, r2_test
@@ -261,12 +326,21 @@ def main(finetune_config):
                 train_data = DataAug.combine_columns(train_data)
                 test_data = DataAug.combine_columns(test_data)
 
-            scaler = StandardScaler()
-            train_data.iloc[:, 1] = scaler.fit_transform(train_data.iloc[:, 1].values.reshape(-1, 1))
-            test_data.iloc[:, 1] = scaler.transform(test_data.iloc[:, 1].values.reshape(-1, 1))
+            target_cols = finetune_config.get('target_cols', None)
+            if target_cols:
+                print(f"Target properties for MTL: {target_cols}")
+                scaler = StandardScaler()
+                train_data[target_cols] = scaler.fit_transform(train_data[target_cols].values)
+                test_data[target_cols] = scaler.transform(test_data[target_cols].values)
+                num_outputs = len(target_cols)
+            else:
+                scaler = StandardScaler()
+                train_data.iloc[:, 1] = scaler.fit_transform(train_data.iloc[:, 1].values.reshape(-1, 1))
+                test_data.iloc[:, 1] = scaler.transform(test_data.iloc[:, 1].values.reshape(-1, 1))
+                num_outputs = 1
 
-            train_dataset = Downstream_Dataset(train_data, tokenizer, finetune_config['blocksize'])
-            test_dataset = Downstream_Dataset(test_data, tokenizer, finetune_config['blocksize'])
+            train_dataset = Downstream_Dataset(train_data, tokenizer, finetune_config['blocksize'], target_cols=target_cols)
+            test_dataset = Downstream_Dataset(test_data, tokenizer, finetune_config['blocksize'], target_cols=target_cols)
             train_dataloader = DataLoader(train_dataset, finetune_config['batch_size'], shuffle=True, num_workers=finetune_config["num_workers"])
             test_dataloader = DataLoader(test_dataset, finetune_config['batch_size'], shuffle=False, num_workers=finetune_config["num_workers"])
 
@@ -276,9 +350,9 @@ def main(finetune_config):
             warmup_steps = int(training_steps * finetune_config['warmup_ratio'])
 
             """Train the model"""
-            model = DownstreamRegression(drop_rate=finetune_config['drop_rate']).to(device)
-            model = model.double()
-            loss_fn = nn.MSELoss()
+            model = DownstreamRegression(num_outputs=num_outputs, drop_rate=finetune_config['drop_rate']).to(device)
+            # model = model.double() # Use float32 for efficiency and compatibility
+            loss_fn = masked_mse_loss
 
             if finetune_config['LLRD_flag']:
                 optimizer = roberta_base_AdamW_LLRD(model, finetune_config['lr_rate'], finetune_config['weight_decay'])
@@ -302,7 +376,7 @@ def main(finetune_config):
                 train(model, optimizer, scheduler, loss_fn, train_dataloader, device)
                 train_loss, test_loss, r2_train, r2_test = test(model, loss_fn, train_dataloader,
                                                                                    test_dataloader, device, scaler,
-                                                                                   optimizer, scheduler, epoch)
+                                                                                   optimizer, scheduler, epoch, target_cols)
                 if r2_test > best_test_r2:
                     best_train_r2 = r2_train
                     best_test_r2 = r2_test
@@ -343,34 +417,55 @@ def main(finetune_config):
         print("Test R^2 =", test_r2)
         print("Standard Deviation of Test RMSE =", std_test_rmse)
         print("Standard Deviation of Test R^2 =", std_test_r2)
-
     else:
         print("Train Test Split")
-        train_data = pd.read_csv(finetune_config['train_file'], header=None)
-        train_data.iloc[:, 1] = pd.to_numeric(train_data.iloc[:, 1], errors='coerce')
-        train_data.dropna(subset=[train_data.columns[1]], inplace=True)
+        target_cols = finetune_config.get('target_cols', None)
+        if target_cols:
+            print(f"Target properties for MTL: {target_cols}")
+            train_data = pd.read_csv(finetune_config['train_file'])
+            test_data = pd.read_csv(finetune_config['test_file'])
+            num_outputs = len(target_cols)
+            
+            # Numeric conversion for all targets
+            for col in target_cols:
+                train_data[col] = pd.to_numeric(train_data[col], errors='coerce')
+                test_data[col] = pd.to_numeric(test_data[col], errors='coerce')
+                
+            scaler = StandardScaler()
+            train_data[target_cols] = scaler.fit_transform(train_data[target_cols].values)
+            test_data[target_cols] = scaler.transform(test_data[target_cols].values)
+            # Save scaler for inference
+            import joblib
+            joblib.dump(scaler, finetune_config.get('scaler_path', 'ckpt/scaler_multi.joblib'))
+        else:
+            train_data = pd.read_csv(finetune_config['train_file'], header=None)
+            train_data.iloc[:, 1] = pd.to_numeric(train_data.iloc[:, 1], errors='coerce')
+            train_data.dropna(subset=[train_data.columns[1]], inplace=True)
 
-        test_data = pd.read_csv(finetune_config['test_file'], header=None)
-        test_data.iloc[:, 1] = pd.to_numeric(test_data.iloc[:, 1], errors='coerce')
-        test_data.dropna(subset=[test_data.columns[1]], inplace=True)
+            test_data = pd.read_csv(finetune_config['test_file'], header=None)
+            test_data.iloc[:, 1] = pd.to_numeric(test_data.iloc[:, 1], errors='coerce')
+            test_data.dropna(subset=[test_data.columns[1]], inplace=True)
+            
+            scaler = StandardScaler()
+            train_data.iloc[:, 1] = scaler.fit_transform(train_data.iloc[:, 1].values.reshape(-1, 1))
+            test_data.iloc[:, 1] = scaler.transform(test_data.iloc[:, 1].values.reshape(-1, 1))
+            num_outputs = 1
 
         if finetune_config['aug_flag']:
-            print("Data Augmentation")
-            DataAug = DataAugmentation(finetune_config['aug_indicator'])
-            train_data = DataAug.smiles_augmentation(train_data)
-            if finetune_config['aug_special_flag']:
-                train_data = DataAug.smiles_augmentation_2(train_data)
-                train_data = DataAug.combine_smiles(train_data)
-                test_data = DataAug.combine_smiles(test_data)
-            train_data = DataAug.combine_columns(train_data)
-            test_data = DataAug.combine_columns(test_data)
+            print("Data Augmentation - WARNING: Only supported for single property currently")
+            # Skip augmentation for MTL for now to avoid complexity unless requested
+            if not target_cols:
+                DataAug = DataAugmentation(finetune_config['aug_indicator'])
+                train_data = DataAug.smiles_augmentation(train_data)
+                if finetune_config['aug_special_flag']:
+                    train_data = DataAug.smiles_augmentation_2(train_data)
+                    train_data = DataAug.combine_smiles(train_data)
+                    test_data = DataAug.combine_smiles(test_data)
+                train_data = DataAug.combine_columns(train_data)
+                test_data = DataAug.combine_columns(test_data)
 
-        scaler = StandardScaler()
-        train_data.iloc[:, 1] = scaler.fit_transform(train_data.iloc[:, 1].values.reshape(-1, 1))
-        test_data.iloc[:, 1] = scaler.transform(test_data.iloc[:, 1].values.reshape(-1, 1))
-
-        train_dataset = Downstream_Dataset(train_data, tokenizer, finetune_config['blocksize'])
-        test_dataset = Downstream_Dataset(test_data, tokenizer, finetune_config['blocksize'])
+        train_dataset = Downstream_Dataset(train_data, tokenizer, finetune_config['blocksize'], target_cols=target_cols)
+        test_dataset = Downstream_Dataset(test_data, tokenizer, finetune_config['blocksize'], target_cols=target_cols)
         train_dataloader = DataLoader(train_dataset, finetune_config['batch_size'], shuffle=True, num_workers=finetune_config["num_workers"])
         test_dataloader = DataLoader(test_dataset, finetune_config['batch_size'], shuffle=False, num_workers=finetune_config["num_workers"])
 
@@ -380,9 +475,9 @@ def main(finetune_config):
         warmup_steps = int(training_steps * finetune_config['warmup_ratio'])
 
         """Train the model"""
-        model = DownstreamRegression(drop_rate=finetune_config['drop_rate']).to(device)
-        model = model.double()
-        loss_fn = nn.MSELoss()
+        model = DownstreamRegression(num_outputs=num_outputs, drop_rate=finetune_config['drop_rate']).to(device)
+        # model = model.double()
+        loss_fn = masked_mse_loss
 
         if finetune_config['LLRD_flag']:
             optimizer = roberta_base_AdamW_LLRD(model, finetune_config['lr_rate'], finetune_config['weight_decay'])
@@ -406,7 +501,7 @@ def main(finetune_config):
             train(model, optimizer, scheduler, loss_fn, train_dataloader, device)
             train_loss, test_loss, r2_train, r2_test = test(model, loss_fn, train_dataloader,
                                                                                    test_dataloader, device, scaler,
-                                                                                   optimizer, scheduler, epoch)
+                                                                                   optimizer, scheduler, epoch, target_cols)
             if r2_test > best_test_r2:
                 best_train_r2 = r2_train
                 best_test_r2 = r2_test
@@ -445,6 +540,7 @@ if __name__ == "__main__":
     print(finetune_config)
 
     """Device"""
+    print(f"DEBUG: torch.cuda.is_available() = {torch.cuda.is_available()}")
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
 

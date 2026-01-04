@@ -1,0 +1,32 @@
+CV_flag: False
+add_vocab_flag: False
+LLRD_flag: False
+aug_flag: False
+aug_special_flag: False
+model_indicator: 'pretrain'
+aug_indicator:
+
+vocab_sup_file: 'vocab/vocab_sup_PE_I.csv'
+train_file: 'data/train_Multi.csv'
+test_file: 'data/test_Multi.csv'
+model_path: 'ckpt/pretrain.pt'
+save_path: 'ckpt/model_multi_train.pt'
+best_model_path: 'ckpt/model_multi_best.pt'
+scaler_path: 'ckpt/scaler_multi.joblib'
+
+# Properties for Multi-task
+target_cols: ['Tg', 'FFV', 'Tc', 'Density', 'Rg']
+
+k: 5
+blocksize: 128
+batch_size: 4
+num_epochs: 20
+warmup_ratio: 0.05
+drop_rate: 0.1
+lr_rate: 0.00005
+lr_rate_reg: 0.0001
+weight_decay: 0.01
+hidden_dropout_prob: 0.1
+attention_probs_dropout_prob: 0.1
+tolerance: 5
+num_workers: 0

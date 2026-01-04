@@ -21,36 +21,52 @@ st.set_page_config(page_title="TransPolymer Predictor", layout="wide")
 # --- Internationalization (i18n) ---
 LANGUAGES = {
     "English": {
-        "title": "🧪 TransPolymer: Polymer Property Predictor",
-        "description": "This application uses a Fine-tuned Transformer model to predict the **Conductivity** of polymers based on their SMILES string.\nIt also visualizes the attention mechanism to show which parts of the chemical structure the model is focusing on.",
+        "title": "🧪 TransPolymer: Multi-Property Predictor",
+        "description": "Predict 5+ polymer properties simultaneously and visualize attention mechanisms.",
         "input_header": "Input SMILES",
         "input_label": "Enter Polymer SMILES:",
-        "predict_btn": "Predict Property",
+        "predict_btn": "Predict All Properties",
         "loading": "Loading model and assets...",
         "success_load": "Model loaded successfully!",
         "invalid_smiles": "❌ Invalid SMILES string. Please check the structure.",
         "analyzing": "Analyzing...",
-        "metric_label": "Predicted Conductivity",
+        "metric_label": "Property Predictions",
         "attn_header": "Attention Map Visualization",
         "select_layer": "Select Layer",
         "select_head": "Select Head",
-        "footer": "Developed with TransPolymer - A Transformer Language Model for Polymer Property Predictions"
+        "property_names": {
+            "Tg": "Glass Transition (Tg) [°C]",
+            "FFV": "Free Volume (FFV)",
+            "Tc": "Thermal Cond (Tc) [W/mK]",
+            "Density": "Density [g/cm³]",
+            "Rg": "Radius of Gyration (Rg) [Å]",
+            "Conductivity": "Conductivity [S/m]"
+        },
+        "footer": "Powered by TransPolymer 🧬 | Deep Learning based Polymer Informatics"
     },
     "한국어": {
-        "title": "🧪 TransPolymer: 고분자 물성 예측기",
-        "description": "이 애플리케이션은 파인튜닝된 트랜스포머 모델을 사용하여 SMILES 문자열을 기반으로 고분자의 **전도도(Conductivity)**를 예측합니다.\n또한 어텐션 메커니즘을 시각화하여 모델이 화학 구조의 어느 부분에 집중하고 있는지 보여줍니다.",
+        "title": "🧪 TransPolymer: 통합 물성 예측기",
+        "description": "SMILES 구조로부터 5가지 핵심 물성을 동시에 예측하고 AI의 분석 포인트를 확인합니다.",
         "input_header": "SMILES 입력",
         "input_label": "고분자 SMILES를 입력하세요:",
-        "predict_btn": "물성 예측",
+        "predict_btn": "모든 물성 예측하기",
         "loading": "모델 및 자산을 로드하는 중...",
         "success_load": "모델이 성공적으로 로드되었습니다!",
         "invalid_smiles": "❌ 유효하지 않은 SMILES 문자열입니다. 구조를 확인해주세요.",
         "analyzing": "분석 중...",
-        "metric_label": "예측된 전도도",
+        "metric_label": "예측된 물성 결과",
         "attn_header": "Attention Map 시각화",
         "select_layer": "레이어 선택",
         "select_head": "헤드 선택",
-        "footer": "TransPolymer로 개발됨 - 고분자 물성 예측을 위한 트랜스포머 언어 모델"
+        "property_names": {
+            "Tg": "유리 전이 온도 (Tg) [°C]",
+            "FFV": "자유 부피비 (FFV)",
+            "Tc": "열전도도 (Tc) [W/mK]",
+            "Density": "밀도 (Density) [g/cm³]",
+            "Rg": "회전 반경 (Rg) [Å]",
+            "Conductivity": "전도도 (Conductivity) [S/m]"
+        },
+        "footer": "TransPolymer 🧬 | 딥러닝 기반 고분자 물성 예측 시스템"
     }
 }
 
@@ -64,16 +80,19 @@ st.markdown(txt["description"])
 
 # --- Model Definition ---
 class DownstreamRegression(nn.Module):
-    def __init__(self, pretrained_model, tokenizer_len, drop_rate=0.1):
+    def __init__(self, num_outputs=1, drop_rate=0.1):
         super(DownstreamRegression, self).__init__()
-        self.PretrainedModel = deepcopy(pretrained_model)
-        self.PretrainedModel.resize_token_embeddings(tokenizer_len)
-
+        # Load roberta config
+        config = RobertaConfig.from_pretrained("roberta-base")
+        config.num_hidden_layers = 6
+        config.num_attention_heads = 12
+        self.PretrainedModel = RobertaModel(config)
+        
         self.Regressor = nn.Sequential(
             nn.Dropout(drop_rate),
-            nn.Linear(self.PretrainedModel.config.hidden_size, self.PretrainedModel.config.hidden_size),
+            nn.Linear(config.hidden_size, config.hidden_size),
             nn.SiLU(),
-            nn.Linear(self.PretrainedModel.config.hidden_size, 1)
+            nn.Linear(config.hidden_size, num_outputs)
         )
 
     def forward(self, input_ids, attention_mask):
@@ -85,26 +104,61 @@ class DownstreamRegression(nn.Module):
 # --- Cache Loaders ---
 @st.cache_resource
 def load_assets():
-    with open("config_finetune.yaml", "r") as f:
-        finetune_config = yaml.safe_load(f)
-    
+    # Use config_finetune.yaml for common params
+    if os.path.exists("config_finetune.yaml"):
+        with open("config_finetune.yaml", "r") as f:
+            base_config = yaml.safe_load(f)
+    else:
+        base_config = {'blocksize': 128}
+
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    tokenizer = PolymerSmilesTokenizer.from_pretrained("roberta-base", max_len=finetune_config['blocksize'])
-    base_model = RobertaModel.from_pretrained(finetune_config['model_path']).to(device)
+    tokenizer = PolymerSmilesTokenizer.from_pretrained("roberta-base", max_len=base_config['blocksize'])
     
-    model = DownstreamRegression(base_model, len(tokenizer)).to(device)
-    checkpoint = torch.load(finetune_config['best_model_path'], map_location=device)
-    model.load_state_dict(checkpoint['model'])
-    model = model.double()
-    model.eval()
-    
-    scaler = joblib.load('ckpt/scaler.joblib')
-    return model, tokenizer, scaler, device, finetune_config
+    # 1. Load Multi-task Model
+    model_multi = None
+    scaler_multi = None
+    tcols_multi = []
+    if os.path.exists('ckpt/model_multi_best.pt'):
+        checkpoint_multi = torch.load('ckpt/model_multi_best.pt', map_location=device)
+        tcols_multi = checkpoint_multi.get('target_cols', ['Tg', 'FFV', 'Tc', 'Density', 'Rg'])
+        model_multi = DownstreamRegression(num_outputs=len(tcols_multi)).to(device)
+        model_multi.load_state_dict(checkpoint_multi['model'])
+        model_multi = model_multi.double().eval()
+        scaler_multi = joblib.load('ckpt/scaler_multi.joblib')
+
+    # 2. Load Conductivity Model
+    model_cond = None
+    scaler_cond = None
+    if os.path.exists('ckpt/model_conductivity_best.pt'):
+        checkpoint_cond = torch.load('ckpt/model_conductivity_best.pt', map_location=device)
+        model_cond = DownstreamRegression(num_outputs=1).to(device)
+        model_cond.load_state_dict(checkpoint_cond['model'])
+        model_cond = model_cond.double().eval()
+        scaler_cond = joblib.load('ckpt/scaler_conductivity.joblib')
+        
+    return {
+        'model_multi': model_multi,
+        'model_cond': model_cond,
+        'tokenizer': tokenizer,
+        'scaler_multi': scaler_multi,
+        'scaler_cond': scaler_cond,
+        'device': device,
+        'config': base_config,
+        'tcols_multi': tcols_multi
+    }
 
 # --- Main Logic ---
 try:
     with st.spinner(txt["loading"]):
-        model, tokenizer, scaler, device, config = load_assets()
+        assets = load_assets()
+        model_multi = assets['model_multi']
+        model_cond = assets['model_cond']
+        tokenizer = assets['tokenizer']
+        scaler_multi = assets['scaler_multi']
+        scaler_cond = assets['scaler_cond']
+        device = assets['device']
+        config = assets['config']
+        tcols_multi = assets['tcols_multi']
     st.success(txt["success_load"])
 except Exception as e:
     st.error(f"Error loading model: {e}")
@@ -140,21 +194,36 @@ with col1:
                 input_ids = encoding["input_ids"].to(device)
                 attention_mask = encoding["attention_mask"].to(device)
                 
+                final_preds = []
+                final_tcols = []
+                
                 with torch.no_grad():
-                    # Get prediction
-                    pred_normalized = model(input_ids, attention_mask)
-                    prediction = scaler.inverse_transform(pred_normalized.cpu().numpy())[0][0]
+                    # 1. Multi-task prediction
+                    if model_multi:
+                        pred_raw_multi = model_multi(input_ids, attention_mask)
+                        pred_inv_multi = scaler_multi.inverse_transform(pred_raw_multi.cpu().numpy())[0]
+                        final_preds.extend(pred_inv_multi)
+                        final_tcols.extend(tcols_multi)
                     
-                    # Get attention
-                    outputs = model.PretrainedModel(input_ids=input_ids, attention_mask=attention_mask, output_attentions=True)
+                    # 2. Conductivity prediction
+                    if model_cond:
+                        pred_raw_cond = model_cond(input_ids, attention_mask)
+                        pred_inv_cond = scaler_cond.inverse_transform(pred_raw_cond.cpu().numpy())[0]
+                        final_preds.extend(pred_inv_cond)
+                        final_tcols.append('Conductivity')
+                    
+                    # Get attention from the first available model for visualization
+                    rep_model = model_multi if model_multi else model_cond
+                    outputs = rep_model.PretrainedModel(input_ids=input_ids, attention_mask=attention_mask, output_attentions=True)
                     attentions = outputs.attentions
             
             # Store everything needed for display in session state
             st.session_state['results'] = {
-                'prediction': prediction,
+                'prediction': final_preds,
                 'attentions': attentions,
                 'input_ids': input_ids,
-                'smiles': smiles_input
+                'smiles': smiles_input,
+                'target_cols': final_tcols
             }
 
     # --- Persistent Display Block ---
@@ -167,7 +236,17 @@ with col1:
         mol = Chem.MolFromSmiles(res['smiles'])
         if mol:
             st.image(Draw.MolToImage(mol, size=(400, 300)), caption="Molecular Structure")
-        st.metric(txt["metric_label"], f"{res['prediction']:.6f}")
+        
+        st.subheader(txt["metric_label"])
+        preds = res['prediction']
+        tcols = res['target_cols']
+        
+        # Grid for metrics
+        m_cols = st.columns(3)
+        for i, col_name in enumerate(tcols):
+            display_name = txt["property_names"].get(col_name, col_name)
+            val = preds[i]
+            m_cols[i % 3].metric(display_name, f"{val:.4f}")
 
 
 # --- Attention Visualization ---
