@@ -104,9 +104,12 @@ class DownstreamRegression(nn.Module):
 # --- Cache Loaders ---
 @st.cache_resource
 def load_assets():
-    # Use config_finetune.yaml for common params from new path
-    if os.path.exists("configs/config_finetune.yaml"):
-        with open("configs/config_finetune.yaml", "r") as f:
+    # Use absolute paths for Windows stability
+    curr_dir = os.path.dirname(os.path.abspath(__file__))
+    config_path = os.path.join(curr_dir, "configs", "config_finetune.yaml")
+    
+    if os.path.exists(config_path):
+        with open(config_path, "r") as f:
             base_config = yaml.safe_load(f)
     else:
         base_config = {'blocksize': 128}
@@ -118,23 +121,29 @@ def load_assets():
     model_multi = None
     scaler_multi = None
     tcols_multi = []
-    if os.path.exists('ckpt/model_multi_best.pt'):
-        checkpoint_multi = torch.load('ckpt/model_multi_best.pt', map_location=device)
+    ckpt_multi_path = os.path.join(curr_dir, 'ckpt', 'model_multi_best.pt')
+    scaler_multi_path = os.path.join(curr_dir, 'ckpt', 'scaler_multi.joblib')
+    
+    if os.path.exists(ckpt_multi_path):
+        checkpoint_multi = torch.load(ckpt_multi_path, map_location=device)
         tcols_multi = checkpoint_multi.get('target_cols', ['Tg', 'FFV', 'Tc', 'Density', 'Rg'])
         model_multi = DownstreamRegression(num_outputs=len(tcols_multi)).to(device)
         model_multi.load_state_dict(checkpoint_multi['model'])
         model_multi = model_multi.double().eval()
-        scaler_multi = joblib.load('ckpt/scaler_multi.joblib')
+        scaler_multi = joblib.load(scaler_multi_path)
 
     # 2. Load Conductivity Model
     model_cond = None
     scaler_cond = None
-    if os.path.exists('ckpt/model_conductivity_best.pt'):
-        checkpoint_cond = torch.load('ckpt/model_conductivity_best.pt', map_location=device)
+    ckpt_cond_path = os.path.join(curr_dir, 'ckpt', 'model_conductivity_best.pt')
+    scaler_cond_path = os.path.join(curr_dir, 'ckpt', 'scaler_conductivity.joblib')
+    
+    if os.path.exists(ckpt_cond_path):
+        checkpoint_cond = torch.load(ckpt_cond_path, map_location=device)
         model_cond = DownstreamRegression(num_outputs=1).to(device)
         model_cond.load_state_dict(checkpoint_cond['model'])
         model_cond = model_cond.double().eval()
-        scaler_cond = joblib.load('ckpt/scaler_conductivity.joblib')
+        scaler_cond = joblib.load(scaler_cond_path)
         
     return {
         'model_multi': model_multi,
