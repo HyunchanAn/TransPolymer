@@ -185,9 +185,6 @@ $ python utils/tSNE.py --config configs/config_tSNE.yaml
 - **다국어 지원**: 한국어와 영어를 모두 지원하며, 물리 단위 정보가 포함되어 있습니다.
 
 ### 실행 방법
-1. 터미널에서 다음 명령어를 실행합니다:
-   ```bash
-   $ streamlit run app.py
 1.  터미널에서 다음 명령어를 실행합니다:
     ```bash
     $ streamlit run app.py
