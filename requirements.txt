@@ -3,7 +3,9 @@
 torch
 torchvision
 torchaudio
-transformers==4.44.2
+transformers==4.47.1
+# Note: install torch 2.5.1+cu121 for GPU support
+# pip install torch==2.5.1+cu121 torchvision==0.20.1+cu121 torchaudio==2.5.1+cu121 --index-url https://download.pytorch.org/whl/cu121
 rdkit
 pandas
 scikit-learn

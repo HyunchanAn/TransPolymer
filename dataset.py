@@ -48,21 +48,29 @@ class LoadPretrainData(Dataset):
             attention_mask=encoding["attention_mask"].flatten(),
         )
 
-"""Downstream Dataset"""
+"""Downstream Dataset for Multi-task"""
 class Downstream_Dataset(Dataset):
-    def __init__(self, dataset, tokenizer, max_token_len):
+    def __init__(self, dataset, tokenizer, max_token_len, target_cols=None):
         self.tokenizer = tokenizer
         self.dataset = dataset
         self.max_token_len = max_token_len
+        self.target_cols = target_cols
 
     def __len__(self):
-        self.len = len(self.dataset)
-        return self.len
+        return len(self.dataset)
 
     def __getitem__(self, i):
         data_row = self.dataset.iloc[i]
-        seq = data_row[0]
-        prop = data_row[1]
+        # Try to get SMILES by column name, otherwise fallback to index 0
+        if 'SMILES' in data_row:
+            seq = data_row['SMILES']
+        else:
+            seq = data_row.iloc[0]
+            
+        if self.target_cols:
+            props = data_row[self.target_cols].values.astype(float)
+        else:
+            props = data_row.iloc[1:].values.astype(float)
 
         encoding = self.tokenizer(
             str(seq),
@@ -78,7 +86,7 @@ class Downstream_Dataset(Dataset):
         return dict(
             input_ids=encoding["input_ids"].flatten(),
             attention_mask=encoding["attention_mask"].flatten(),
-            prop=prop
+            prop=torch.tensor(props)
         )
 
 """Adapted from RobertaEmbedding"""

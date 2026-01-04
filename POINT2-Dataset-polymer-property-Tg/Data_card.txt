@@ -1,0 +1,7 @@
+https://www.kaggle.com/datasets/fridaycode/point2-dataset-polymer-property-tg-smiles
+
+About Dataset
+Data Source: https://github.com/Jiaxin-Xu/POINT2
+
+SMILES: Polymer SMILES Strings
+Tg: Glass Transition Temperature (°C)
