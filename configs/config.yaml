@@ -1,4 +1,4 @@
-file_path: 'data/pretrain_sample.csv'          # pretrain data path
+file_path: 'data/train_PE_I.csv'          # pretrain data path
 
 epochs: 3                               # total number of epochs
 batch_size: 16                          # batch size

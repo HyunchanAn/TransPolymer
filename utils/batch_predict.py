@@ -34,7 +34,12 @@ class DownstreamRegression(nn.Module):
         return self.Regressor(logits)
 
 def batch_predict(input_csv, output_csv):
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    if torch.backends.mps.is_available():
+        device = torch.device("mps")
+    elif torch.cuda.is_available():
+        device = torch.device("cuda")
+    else:
+        device = torch.device("cpu")
     curr_dir = os.getcwd()
     config_path = os.path.join(curr_dir, "configs", "config_finetune.yaml")
     

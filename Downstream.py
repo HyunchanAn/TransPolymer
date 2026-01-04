@@ -147,7 +147,8 @@ def train(model, optimizer, scheduler, loss_fn, train_dataloader, device):
     for step, batch in enumerate(train_dataloader):
         input_ids = batch["input_ids"].to(device)
         attention_mask = batch["attention_mask"].to(device)
-        prop = batch["prop"].to(device).float()
+        # Cast to float32 BEFORE moving to device for MPS support
+        prop = batch["prop"].float().to(device)
         
         if step == 0: 
             print(f"DEBUG: First batch loaded! Shape: ids={input_ids.shape}, prop={prop.shape}")
@@ -184,7 +185,8 @@ def test(model, loss_fn, train_dataloader, test_dataloader, device, scaler, opti
         for step, batch in enumerate(train_dataloader):
             input_ids = batch["input_ids"].to(device)
             attention_mask = batch["attention_mask"].to(device)
-            prop = batch["prop"].to(device).float()
+            # Cast to float32 BEFORE moving to device for MPS support
+            prop = batch["prop"].float().to(device)
             outputs = model(input_ids, attention_mask).float()
             
             # Masked loss for reporting
@@ -198,8 +200,8 @@ def test(model, loss_fn, train_dataloader, test_dataloader, device, scaler, opti
             if len(out_np.shape) == 1: out_np = out_np.reshape(-1, 1)
             if len(prop_np.shape) == 1: prop_np = prop_np.reshape(-1, 1)
             
-            outputs_inv = torch.from_numpy(scaler.inverse_transform(out_np)).to(device)
-            prop_inv = torch.from_numpy(scaler.inverse_transform(prop_np)).to(device)
+            outputs_inv = torch.from_numpy(scaler.inverse_transform(out_np)).float().to(device)
+            prop_inv = torch.from_numpy(scaler.inverse_transform(prop_np)).float().to(device)
             
             train_pred_list.append(outputs_inv)
             train_true_list.append(prop_inv)
@@ -224,7 +226,8 @@ def test(model, loss_fn, train_dataloader, test_dataloader, device, scaler, opti
         for step, batch in enumerate(test_dataloader):
             input_ids = batch["input_ids"].to(device)
             attention_mask = batch["attention_mask"].to(device)
-            prop = batch["prop"].to(device).float()
+            # Cast to float32 BEFORE moving to device for MPS support
+            prop = batch["prop"].float().to(device)
             outputs = model(input_ids, attention_mask).float()
             
             loss = masked_mse_loss(outputs, prop)
@@ -235,8 +238,8 @@ def test(model, loss_fn, train_dataloader, test_dataloader, device, scaler, opti
             if len(out_np.shape) == 1: out_np = out_np.reshape(-1, 1)
             if len(prop_np.shape) == 1: prop_np = prop_np.reshape(-1, 1)
             
-            outputs_inv = torch.from_numpy(scaler.inverse_transform(out_np)).to(device)
-            prop_inv = torch.from_numpy(scaler.inverse_transform(prop_np)).to(device)
+            outputs_inv = torch.from_numpy(scaler.inverse_transform(out_np)).float().to(device)
+            prop_inv = torch.from_numpy(scaler.inverse_transform(prop_np)).float().to(device)
             
             test_pred_list.append(outputs_inv)
             test_true_list.append(prop_inv)
@@ -373,7 +376,10 @@ def main(finetune_config):
 
             scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=warmup_steps,
                                                         num_training_steps=training_steps)
-            torch.cuda.empty_cache()
+            if device.type == "cuda":
+                torch.cuda.empty_cache()
+            elif device.type == "mps":
+                torch.mps.empty_cache()
             train_loss_best, test_loss_best, best_train_r2, best_test_r2 = 0.0, 0.0, 0.0, 0.0  # Keep track of the best test r^2 in one fold. If cross-validation is not used, that will be the same as best_r2.
             count = 0     # Keep track of how many successive non-improvement epochs
             for epoch in range(finetune_config['num_epochs']):
@@ -498,7 +504,10 @@ def main(finetune_config):
 
         scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=warmup_steps,
                                                     num_training_steps=training_steps)
-        torch.cuda.empty_cache()
+        if device.type == "cuda":
+            torch.cuda.empty_cache()
+        elif device.type == "mps":
+            torch.mps.empty_cache()
         train_loss_best, test_loss_best, best_train_r2, best_test_r2 = 0.0, 0.0, 0.0, 0.0  # Keep track of the best test r^2 in one fold. If cross-validation is not used, that will be the same as best_r2.
         count = 0     # Keep track of how many successive non-improvement epochs
         for epoch in range(finetune_config['num_epochs']):
@@ -546,7 +555,12 @@ if __name__ == "__main__":
 
     """Device"""
     print(f"DEBUG: torch.cuda.is_available() = {torch.cuda.is_available()}")
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    if torch.backends.mps.is_available():
+        device = torch.device("mps")
+    elif torch.cuda.is_available():
+        device = torch.device("cuda")
+    else:
+        device = torch.device("cpu")
     print(f"Using device: {device}")
 
     if finetune_config['model_indicator'] == 'pretrain':
