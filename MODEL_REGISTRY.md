@@ -44,3 +44,8 @@ The following assets were prepared to achieve high-precision Glass Transition Te
 - **Config**: `config_finetune_Multi_Boost.yaml`
 - **Utility**: `merge_point2.py`
 - **Script**: `run_tg_boost.bat`
+
+## 5. User-Provided Core Datasets
+Official data assets provided for high-precision industrial optimization.
+- **NeurIPS 2025 (Open Polymer Prediction)**: 5-property MD simulation data. Used for MTL v1.0.
+- **POINT2-Dataset**: 7,210 high-quality Tg samples. Used for industrial-grade Tg-Boost training.

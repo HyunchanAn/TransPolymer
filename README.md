@@ -69,11 +69,22 @@ PE-I: ["AI-Assisted Exploration of Superionic Glass-Type Li(+) Conductors with A
 
 PE-II: ["Database Creation, Visualization, and Statistical Learning for Polymer Li+-Electrolyte Design"](https://pubs.acs.org/doi/full/10.1021/acs.chemmater.0c04767)
 
-Egc, Egb, Eea, Ei, Xc, EPS, Nc: ["Polymer informatics with multi-task learning"](https://www.sciencedirect.com/science/article/pii/S2666389921000581)
+---
 
-OPV: ["Computer-Aided Screening of Conjugated Polymers for Organic Solar Cell: Classification by Random Forest"](https://pubs.acs.org/doi/10.1021/acs.jpclett.8b00635)
+### 추가된 핵심 데이터셋
+본 프로젝트의 발전을 위해 추가된 핵심 데이터셋입니다:
 
-원본 및 가공된 데이터셋은 `data` 폴더에 포함되어 있습니다.
+1. **NeurIPS - Open Polymer Prediction 2025**
+   - **출처**: [Kaggle Competition](https://www.kaggle.com/competitions/neurips-open-polymer-prediction-2025/data)
+   - **물성**: Tg, FFV, Tc, Density, Rg (통합 멀티태스크 학습의 기반)
+   - **설명**: MD 시뮬레이션 기반의 고품질 고분자 물성 데이터셋입니다.
+
+2. **POINT2-Dataset (Polymer Property Tg)**
+   - **출처**: [Kaggle Dataset](https://www.kaggle.com/datasets/fridaycode/point2-dataset-polymer-property-tg-smiles), [GITHUB](https://github.com/Jiaxin-Xu/POINT2)
+   - **물성**: 유리 전이 온도 (Tg) - 약 7,210개 샘플
+   - **설명**: 접착제 개발의 정밀도를 높이기 위한 대용량 Tg 전용 데이터셋입니다.
+
+---
 
 ### 토큰화 (Tokenization)
 `PolymerSmilesTokenization.py`는 [huggingface](https://github.com/huggingface/transformers/tree/v4.21.2)의 RobertaTokenizer를 기반으로 하며, 화학 구조 인식을 위해 특별히 설계된 정규 표현식을 사용합니다.
@@ -234,9 +245,19 @@ PE-II: ["Database Creation, Visualization, and Statistical Learning for Polymer 
 
 Egc, Egb, Eea, Ei, Xc, EPS, Nc: ["Polymer informatics with multi-task learning"](https://www.sciencedirect.com/science/article/pii/S2666389921000581)
 
-OPV: ["Computer-Aided Screening of Conjugated Polymers for Organic Solar Cell: Classification by Random Forest"](https://pubs.acs.org/doi/10.1021/acs.jpclett.8b00635)
+---
 
-The original and processed datasets are included in the data folder. 
+### [User-Provided Primary Datasets]
+Key datasets provided by the user for project enhancement:
+
+1. **NeurIPS - Open Polymer Prediction 2025**
+   - **Source**: [Kaggle Competition](https://www.kaggle.com/competitions/neurips-open-polymer-prediction-2025/data)
+   - **Properties**: Tg, FFV, Tc, Density, Rg (Core Multi-Task data)
+2. **POINT2-Dataset (Polymer Property Tg)**
+   - **Source**: [Kaggle Dataset](https://www.kaggle.com/datasets/fridaycode/point2-dataset-polymer-property-tg-smiles), [GITHUB](https://github.com/Jiaxin-Xu/POINT2)
+   - **Properties**: Glass Transition Temperature (Tg) - ~7,210 samples
+
+---
 
 ### Tokenization
 `PolymerSmilesTokenization.py` is adapted from RobertaTokenizer from [huggingface](https://github.com/huggingface/transformers/tree/v4.21.2) with a specially designed regular expression for tokenization with chemical awareness.
