@@ -9,6 +9,13 @@ echo "========================================"
 echo "🚀 TransPolymer Tg-Boost Training"
 echo "========================================"
 echo "Step 1: Multi-task Pre-training..."
+
+# Check if data exists
+if [ ! -f "data/train_Multi.csv" ]; then
+    echo "⚠️  Data not found. Generatiing data from raw source..."
+    .venv/bin/python utils/prepare_multi_data.py
+fi
+
 .venv/bin/python Downstream.py --config configs/config_finetune_Multi.yaml
 
 echo ""
