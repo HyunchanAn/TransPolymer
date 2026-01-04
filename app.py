@@ -104,9 +104,9 @@ class DownstreamRegression(nn.Module):
 # --- Cache Loaders ---
 @st.cache_resource
 def load_assets():
-    # Use config_finetune.yaml for common params
-    if os.path.exists("config_finetune.yaml"):
-        with open("config_finetune.yaml", "r") as f:
+    # Use config_finetune.yaml for common params from new path
+    if os.path.exists("configs/config_finetune.yaml"):
+        with open("configs/config_finetune.yaml", "r") as f:
             base_config = yaml.safe_load(f)
     else:
         base_config = {'blocksize': 128}

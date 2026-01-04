@@ -75,33 +75,43 @@ The original and processed datasets are included in the data folder.
 ### Checkpoints
 Pretrained model can be found in `ckpt` folder.
 
+### [NEW] Project Structure
+- **`app.py`**: Unified 6-Property Streamlit Dashboard.
+- **`Downstream.py`**: Core logic for multi-task and single-task fine-tuning.
+- **`configs/`**: Centralized storage for YAML configurations.
+- **`utils/`**: Data processing and analytical tools (t-SNE, Attention mapping).
+- **`maintenance/`**: Environment setup and diagnostic scripts.
+- **`ckpt/` & `data/`**: Model weights and dataset storage.
+
 ## Run the Model
 
 ### Pretraining
-To pretrain TransPolymer, where the configurations and detailed explaination for each variable can be found in `config.yaml`.
+To pretrain TransPolymer, the configuration can be found in `configs/config.yaml`.
+```bash
+$ python -m torch.distributed.launch --nproc_per_node=2 Pretrain.py --config configs/config.yaml
 ```
-$ python -m torch.distributed.launch --nproc_per_node=2 Pretrain.py
-```
-<em>DistributedDataParallel</em> is used for faster pretraining. The pretrained model can be found in `ckpt/pretrain.pt`
+*DistributedDataParallel* is used for faster pretraining. The pretrained model can be found in `ckpt/pretrain.pt`
 
 ### Finetuning
-To finetune the pretrained TransPolymer on different downstream benchmarks about polymer properties, where the configurations and detailed explaination for each variable can be found in `config_finetune.yaml`.
+To finetune the pretrained TransPolymer, find configurations in `configs/config_finetune.yaml`.
+```bash
+$ python Downstream.py --config configs/config_finetune.yaml
 ```
-$ python Downstream.py
+For Multi-task (5 properties):
+```bash
+$ python Downstream.py --config configs/config_finetune_Multi.yaml
 ```
-
-## Visualization
 
 ### Attention Visualization
-To visualize the attention scores for interpretability of pretraining and finetuning phases, where the configurations and detailed explaination for each variable can be found in `config_attention.yaml`.
-```
-$ python Attention_vis.py
+To visualize attention scores, configurations are in `configs/config_attention.yaml`.
+```bash
+$ python utils/Attention_vis.py --config configs/config_attention.yaml
 ```
 
 ### t-SNE Visualization
-To visualize the chemical space covered by each dataset, where the configurations and detailed explaination for each variable can be found in `config_tSNE.yaml`.
-```
-$ python tSNE.py
+To visualize the chemical space, configurations are in `configs/config_tSNE.yaml`.
+```bash
+$ python utils/tSNE.py --config configs/config_tSNE.yaml
 ```
 
 ## Acknowledgement
