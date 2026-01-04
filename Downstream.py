@@ -527,7 +527,7 @@ def main(finetune_config):
 
 if __name__ == "__main__":
     # Allow specifying config file via command line
-    config_file = "config_finetune.yaml"
+    config_file = "configs/config_finetune.yaml"
     if len(sys.argv) > 1:
         # Simple check for --config argument
         for i, arg in enumerate(sys.argv):
