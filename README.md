@@ -26,9 +26,45 @@
 }
 ```
 
+> [!TIP]
+> **MacOS (Apple Silicon) 지원 안내:**
+> 본 프로젝트는 M1/M2/M3 등 Apple Silicon 칩셋의 **MPS (Metal Performance Shaders)** 가속을 완벽하게 지원합니다. 별도의 설정 없이 자동으로 GPU를 감지하여 사용합니다.
+
 ## 시작하기
 
-### 설치 방법
+### 빠른 시작 (MacOS/Apple Silicon 데모용)
+  
+  초기 환경 설정을 위해 **원클릭 설치 스크립트**를 제공합니다.
+  터미널에서 아래 명령어를 실행하면 파이썬 가상환경 생성 및 라이브러리 설치가 자동으로 진행됩니다.
+  
+  ```bash
+  bash setup_mac.sh
+  ```
+  
+  설치 완료 후:
+  ```bash
+
+  # 가상환경 생성 
+  bash setup_mac.sh
+
+  # 가상환경 활성화
+  source .venv/bin/activate
+  
+  # 모델 학습 시연
+  python Pretrain.py --config configs/config.yaml
+  
+  # 파인튜닝 (기본)
+  bash run_finetune.sh
+  
+  # Tg-Boost (심화 학습)
+  bash run_tg_boost.sh
+
+  # 데모 실행 (스트림릿 앱)
+  streamlit run app.py
+  
+  ```
+  
+  ### 설치 방법 (수동)
 
 Conda 환경을 설정하고 github 레포지토리를 클론합니다.
 
@@ -105,6 +141,10 @@ PE-II: ["Database Creation, Visualization, and Statistical Learning for Polymer 
 ### 사전 학습 (Pretraining)
 설정 파일은 `configs/config.yaml`에서 확인할 수 있습니다.
 ```bash
+# MacOS / Single Process
+$ python Pretrain.py --config configs/config.yaml
+
+# Linux / Multi-GPU (Legacy)
 $ python -m torch.distributed.launch --nproc_per_node=2 Pretrain.py --config configs/config.yaml
 ```
 빠른 학습을 위해 *DistributedDataParallel*이 사용됩니다. 학습 결과는 `ckpt/pretrain.pt`에 저장됩니다.
@@ -204,6 +244,33 @@ This is the official implementation of <strong><em>TransPolymer</em></strong>: [
 ```
 
 ## Getting Started
+
+### 🔥 Quick Start (MacOS/Apple Silicon Demo)
+
+For a quick setup on a clean MacBook (Apple Silicon), use the provided **one-click setup script**.
+Run the following command in your terminal to automatically create a virtual environment and install all dependencies.
+
+```bash
+bash setup_mac.sh
+```
+
+After setup:
+```bash
+# Activate virtual environment
+source .venv/bin/activate
+
+# Run Demo App
+streamlit run app.py
+
+# Or Run Training Demo
+python Pretrain.py --config configs/config.yaml
+
+# Run Finetuning
+bash run_finetune.sh
+
+# Run Tg-Boost
+bash run_tg_boost.sh
+```
 
 ### Installation
 

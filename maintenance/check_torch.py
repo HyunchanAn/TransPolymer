@@ -12,3 +12,9 @@ if torch.cuda.is_available():
     print(f"Device name: {torch.cuda.get_device_name(0)}")
 else:
     print("CUDA is NOT available to Torch.")
+
+print(f"MPS available: {torch.backends.mps.is_available()}")
+if torch.backends.mps.is_available():
+    print("MPS (Apple Silicon) is supported and available.")
+else:
+    print("MPS is NOT available.")

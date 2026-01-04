@@ -7,9 +7,14 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 from torch.utils.tensorboard import SummaryWriter
 from tensorboard import program
-import sys
-import os
 import yaml
+import os
+import sys
+
+# Add project root and utils to path to find local modules
+project_root = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(project_root)
+sys.path.append(os.path.join(project_root, "utils"))
 
 """Import PolymerSmilesTokenizer from PolymerSmilesTokenization.py"""
 from PolymerSmilesTokenization import PolymerSmilesTokenizer
@@ -18,8 +23,15 @@ from PolymerSmilesTokenization import PolymerSmilesTokenizer
 from dataset import LoadPretrainData
 
 """Device"""
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-torch.cuda.is_available() #checking if CUDA + Colab GPU works
+# Check for MPS (Apple Silicon) or CUDA (NVIDIA) or CPU
+if torch.backends.mps.is_available():
+    device = torch.device("mps")
+elif torch.cuda.is_available():
+    device = torch.device("cuda")
+else:
+    device = torch.device("cpu")
+
+print(f"Using device: {device}")
 
 """train-validation split"""
 def split(file_path):
@@ -67,14 +79,13 @@ def main(pretrain_config):
         save_total_limit=pretrain_config['save_total_limit'],
         fp16=pretrain_config['fp16'],
         logging_strategy=pretrain_config['logging_strategy'],
-        evaluation_strategy=pretrain_config['evaluation_strategy'],
+        eval_strategy=pretrain_config['evaluation_strategy'],
         learning_rate=pretrain_config['lr_rate'],
         lr_scheduler_type=pretrain_config['scheduler_type'],
         weight_decay=pretrain_config['weight_decay'],
         warmup_ratio=pretrain_config['warmup_ratio'],
         report_to=pretrain_config['report_to'],
         dataloader_num_workers=pretrain_config['dataloader_num_workers'],
-        sharded_ddp=pretrain_config['sharded_ddp'],
     )
 
     """Set Trainer"""
@@ -96,14 +107,26 @@ def main(pretrain_config):
     
 
     """Train and save model"""
-    #torch.cuda.empty_cache()
+    if device.type == "cuda":
+        torch.cuda.empty_cache()
+    elif device.type == "mps":
+        torch.mps.empty_cache()
     #trainer.train()
     trainer.train(resume_from_checkpoint=pretrain_config['load_checkpoint'])
     trainer.save_model(pretrain_config["save_path"])
 
 if __name__ == "__main__":
 
-    pretrain_config = yaml.load(open("config.yaml", "r"), Loader=yaml.FullLoader)
+    # Parse command line arguments for config
+    config_file = "config.yaml"
+    if len(sys.argv) > 1:
+        for i, arg in enumerate(sys.argv):
+            if arg == "--config" and i + 1 < len(sys.argv):
+                config_file = sys.argv[i+1]
+                break
+    
+    print(f"Loading config from: {config_file}")
+    pretrain_config = yaml.load(open(config_file, "r"), Loader=yaml.FullLoader)
 
     """Run the main function"""
     main(pretrain_config)
