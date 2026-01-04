@@ -43,17 +43,17 @@ def batch_predict(input_csv, output_csv):
     
     tokenizer = PolymerSmilesTokenizer.from_pretrained("roberta-base", max_len=config.get('blocksize', 128))
     
-    # Load Models
+    # Load Models (Modified to use Boosted Model for Verification)
     model_multi = None
     scaler_multi = None
     tcols_multi = ['Tg', 'FFV', 'Tc', 'Density', 'Rg']
-    ckpt_multi = os.path.join(curr_dir, 'ckpt', 'model_multi_best.pt')
+    ckpt_multi = os.path.join(curr_dir, 'ckpt', 'model_multi_boost_best.pt')
     if os.path.exists(ckpt_multi):
         checkpoint = torch.load(ckpt_multi, map_location=device)
         model_multi = DownstreamRegression(num_outputs=len(tcols_multi)).to(device)
         model_multi.load_state_dict(checkpoint['model'])
         model_multi.double().eval()
-        scaler_multi = joblib.load(os.path.join(curr_dir, 'ckpt', 'scaler_multi.joblib'))
+        scaler_multi = joblib.load(os.path.join(curr_dir, 'ckpt', 'scaler_multi_boost.joblib'))
 
     model_cond = None
     scaler_cond = None

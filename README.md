@@ -148,18 +148,21 @@ $ python utils/tSNE.py --config configs/config_tSNE.yaml
 1. 터미널에서 다음 명령어를 실행합니다:
    ```bash
    $ streamlit run app.py
-   ```
-2. 웹 브라우저가 열리면 SMILES 입력칸에 분석하려는 고분자의 구조식을 입력하고 "모든 물성 예측하기" 버튼을 누릅니다.
+1.  터미널에서 다음 명령어를 실행합니다:
+    ```bash
+    $ streamlit run app.py
+    ```
+2.  웹 브라우저가 열리면 SMILES 입력칸에 분석하려는 고분자의 구조식을 입력하고 "모든 물성 예측하기" 버튼을 누릅니다.
 
 ### 예측 가능한 물성 목록
 | 물성명 (KR) | 영문명 & 기호 | 단위 |
 | :--- | :--- | :--- |
-| **유리 전이 온도** | Glass Transition (Tg) | °C |
+| **유리 전이 온도** | Glass Transition (Tg) | °C | (v1.1 Boost 적용) |
 | **자유 부피비** | Free Volume (FFV) | - |
 | **열전도도** | Thermal Cond (Tc) | W/mK |
 | **밀도** | Density | g/cm³ |
 | **회전 반경** | Radius of Gyration (Rg) | Å |
-| **전기 전도도** | Conductivity | S/m |
+| **이온 전도도** | Ionic Conductivity | S/cm |
 
 ---
 

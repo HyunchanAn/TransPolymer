@@ -8,31 +8,30 @@ This document tracks the performance and metadata of trained models and data ass
 - **Combined Properties**: `['Tg', 'FFV', 'Tc', 'Density', 'Rg', 'Conductivity']`
 - **Features**: Single SMILES input results in simultaneous prediction from Multi-Task Model (v1.0) and Legacy Conductivity Model.
 
-## 1. Unified Multi-Task Model (v1.0)
-- **File**: `ckpt/model_multi_best.pt`
-- **Scaler**: `ckpt/scaler_multi.joblib`
-- **Target Properties**: `['Tg', 'FFV', 'Tc', 'Density', 'Rg']`
-- **Architecture**: RoBERTa-base + Multi-output MLP Regressor
-- **Training Epochs**: 20
-- **Overall Performance**: Avg Test R² = **0.7500**
+## 1. Unified Multi-Task Model (v1.1 - Tg-Boost)
+`POINT2`와 `NeurIPS 2025` 데이터를 통합하여 유리 전이 온도(Tg) 예측 성능을 극대화한 최신 모델입니다.
 
-### Property-wise Performance Dashboard
-| Property | Test R² | Test RMSE | Unit |
-| :--- | :--- | :--- | :--- |
-| **Tg** | 0.6484 | 60.4664 | °C |
-| **FFV** | 0.8235 | 0.0113 | - |
-| **Tc** | 0.7696 | 0.0422 | W/mK |
-| **Density** | 0.8851 | 0.0477 | g/cm³ |
-| **Rg** | 0.6235 | 3.0278 | Å |
+- **Checkpoint**: `ckpt/model_multi_boost_best.pt`
+- **Scaler**: `ckpt/scaler_multi_boost.joblib`
+- **Target Properties**: `['Tg', 'FFV', 'Tc', 'Density', 'Rg']`
+- **Performance (Overall Test RMSE: 0.4584)**:
+  | Property | Test R² | Test RMSE | Unit |
+  | :--- | :--- | :--- | :--- |
+  | **Tg** | **0.7586** | 53.2650 | °C |
+  | **FFV** | 0.7789 | 0.0126 | - |
+  | **Tc** | 0.6849 | 0.0493 | W/mK |
+  | **Density** | 0.4976 | 0.0997 | g/cm³ |
+  | **Rg** | 0.5270 | 3.3938 | Å |
 
 ---
 
-## 2. Single-Task Conductivity Model (Legacy/Archived)
-- **File**: `ckpt/model_conductivity_best.pt`
-- **Scaler**: `ckpt/scaler_conductivity.joblib`
-- **Target Property**: `Conductivity`
-- **Test R²**: 0.3436
-- **Test RMSE**: 0.0035
+## 2. Ionic Conductivity Model (v1.0)
+리튬 이온 전도체 전용 데이터로 학습된 예측 모델입니다.
+
+- **Checkpoint**: `ckpt/model_conductivity_best.pt`
+- **Test RMSE**: 0.0035 (Standardized)
+- **Unit**: **S/cm (Ionic Conductivity)**
+- **Note**: 일반 고분자의 절연 특성이 아닌 이온 전도 성능을 예측합니다.
 
 ---
 
