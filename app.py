@@ -129,12 +129,12 @@ def load_assets():
     ckpt_multi_path = os.path.join(curr_dir, 'ckpt', 'model_multi_best.pt')
     scaler_multi_path = os.path.join(curr_dir, 'ckpt', 'scaler_multi.joblib')
     
-    if os.path.exists(ckpt_multi_path):
-        checkpoint_multi = torch.load(ckpt_multi_path, map_location=device)
+    if os.path.exists(ckpt_multi_path) and os.path.exists(scaler_multi_path):
+        checkpoint_multi = torch.load(ckpt_multi_path, map_location='cpu')
         tcols_multi = checkpoint_multi.get('target_cols', ['Tg', 'FFV', 'Tc', 'Density', 'Rg'])
-        model_multi = DownstreamRegression(num_outputs=len(tcols_multi)).to(device)
+        model_multi = DownstreamRegression(num_outputs=len(tcols_multi))
         model_multi.load_state_dict(checkpoint_multi['model'])
-        model_multi = model_multi.double().eval()
+        model_multi = model_multi.float().eval().to(device)
         scaler_multi = joblib.load(scaler_multi_path)
 
     # 2. Load Conductivity Model
@@ -143,11 +143,11 @@ def load_assets():
     ckpt_cond_path = os.path.join(curr_dir, 'ckpt', 'model_conductivity_best.pt')
     scaler_cond_path = os.path.join(curr_dir, 'ckpt', 'scaler_conductivity.joblib')
     
-    if os.path.exists(ckpt_cond_path):
-        checkpoint_cond = torch.load(ckpt_cond_path, map_location=device)
-        model_cond = DownstreamRegression(num_outputs=1).to(device)
+    if os.path.exists(ckpt_cond_path) and os.path.exists(scaler_cond_path):
+        checkpoint_cond = torch.load(ckpt_cond_path, map_location='cpu')
+        model_cond = DownstreamRegression(num_outputs=1)
         model_cond.load_state_dict(checkpoint_cond['model'])
-        model_cond = model_cond.double().eval()
+        model_cond = model_cond.float().eval().to(device)
         scaler_cond = joblib.load(scaler_cond_path)
         
     return {
