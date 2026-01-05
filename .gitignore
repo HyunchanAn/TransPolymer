@@ -1,5 +1,4 @@
 # Ignore virtual environment
-# Ignore virtual environment
 .venv/
 venv/
 env/
@@ -19,6 +18,7 @@ __pycache__/
 
 # Ignore model checkpoints
 ckpt/
+*.pt
 
 # Ignore experiment runs
 runs/
