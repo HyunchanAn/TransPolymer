@@ -20,6 +20,14 @@ fi
 
 echo ""
 echo "Step 2: Boosting with Tg Specific Data..."
+
+# Check if merged data exists
+if [ ! -f "data/merged/train_Multi_POINT2.csv" ]; then
+    echo "⚠️  Merged Data not found. Merging Multi-task and POINT2 data..."
+    # Ensure dependencies are met (Multi data must exist, which is handled in Step 1)
+    .venv/bin/python utils/merge_point2.py
+fi
+
 .venv/bin/python Downstream.py --config configs/config_finetune_Multi_Boost.yaml
 
 echo "========================================"
