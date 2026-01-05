@@ -19,7 +19,7 @@ target_cols: ['Tg', 'FFV', 'Tc', 'Density', 'Rg']
 
 k: 5
 blocksize: 128
-batch_size: 4
+batch_size: 2                                      # batch size
 num_epochs: 30
 warmup_ratio: 0.1
 drop_rate: 0.1

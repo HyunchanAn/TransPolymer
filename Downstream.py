@@ -1,8 +1,13 @@
+# Add project root and utils to path to find local modules
+import os
+import sys
+project_root = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(project_root)
+sys.path.append(os.path.join(project_root, "utils"))
+
 import pandas as pd
 import numpy as np
-import sys
 import yaml
-
 from tqdm.auto import tqdm
 
 import torch
@@ -527,7 +532,7 @@ def main(finetune_config):
 
 if __name__ == "__main__":
     # Allow specifying config file via command line
-    config_file = "config_finetune.yaml"
+    config_file = "configs/config_finetune.yaml"
     if len(sys.argv) > 1:
         # Simple check for --config argument
         for i, arg in enumerate(sys.argv):
