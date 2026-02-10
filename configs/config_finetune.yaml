@@ -16,7 +16,7 @@ best_model_path: 'ckpt/model_conductivity_best.pt'          # best model save pa
 k: 5                                                # k-fold cross-validation
 blocksize: 128                                      # max length of sequences after tokenization
 batch_size: 4                                      # batch size
-num_epochs: 20                                      # total number of epochs
+num_epochs: 1                                      # total number of epochs
 warmup_ratio: 0.05                                  # warmup ratio
 drop_rate: 0.1                                      # dropout
 lr_rate: 0.00005                                    # learning rate

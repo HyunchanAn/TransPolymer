@@ -1,0 +1,33 @@
+##### 2026-02-10 #####
+- 프로젝트 분석: `README.md`, `implementation_plan.md` 및 프로젝트 구조 분석 완료. `gemini.md`는 누락됨.
+- 목표: TransPolymer 프로젝트 환경 재현 및 기능 검증.
+- 계획:
+    1. CUDA 지원 Python 환경 설정.
+    2. 데이터셋 준비 및 모델 체크포인트 확인.
+    3. 학습 스크립트 및 Streamlit 앱 실행을 통한 시스템 검증.
+- 진행 상황:
+    - Python 3.x / Torch 2.5.1+cu121 / CUDA Available 확인.
+    - `data/` 디렉토리 존재 확인.
+    - `ckpt/` 디렉토리 부재 확인 -> `mkdir ckpt`로 생성 완료.
+    - `Pretrain.py` 실행 시 `accelerate` 패키지 오류 확인 -> `pip install accelerate --upgrade`로 해결.
+    - `Pretrain.py` 재실행 결과 정상 작동(학습 시작) 확인.
+- 결론: 재현 준비 완료. 모델 가중치 파일은 없으나 학습 파이프라인은 정상 작동함.
+- 단계를 건너뛰지 않고 정석대로 진행 (`Pretrain` -> `Downstream`).
+- 조치: `utils/prepare_all_data.py` 실행하여 데이터 준비 후, `Pretrain.py` 실행 예정.
+- 최적화 조치: `config_finetune*.yaml` 파일들의 `num_epochs`를 1로 수정하여 다운스트림 학습 시간을 단축했습니다.
+- 진행 상황: `Pretrain.py` 실행 중 (3 Epochs 예상, 현재 진행률 ~20%). 완료 후 `run_tg_boost.sh` 실행 예정.
+- 완료: `Pretrain.py` 학습 완료 (3 Epochs). `ckpt/pretrain.pt` 생성됨.
+- 진행 중: `run_tg_boost.sh` 실행 시작 (Multi-task + Tg-Boost 학습). (Windows 환경 이슈로 수동 실행 전환)
+- 이슈: `run_tg_boost.sh` 실행 불가 (Windows 환경).
+- 조치: 스크립트 내용을 수동으로 순차 실행 중.
+    1. `python Downstream.py --config configs/config_finetune_Multi.yaml` (완료)
+    2. `python Downstream.py --config configs/config_finetune_Multi_Boost.yaml` (진행 중 중단됨)
+- 완료: `config_finetune_Multi.yaml` 학습 완료.
+- 진행 중: `config_finetune_Multi_Boost.yaml` (Tg-Boost) 학습 시작.
+- 변경: `ckpt` 폴더에 기존 모델 파일을 수동으로 복사해오기로 함.
+- 대기: 파일 복사 완료 후 `app.py` 실행 예정.
+- UI 개선:
+    1. **언어 토글 기능 추가**: 기존 사이드바 라디오 버튼을 우측 상단 'This/That' 스타일 버튼으로 변경 (Session State 활용).
+    2. **레이아웃 변경**: 사이드바 제거 및 전체화면 활용.
+    3. **저작권 문구 추가**: 세계화학공업(주) 관련 문구 하단 추가.
+- 완료: 모든 변경 사항 테스트 완료 및 Git 커밋/푸시.

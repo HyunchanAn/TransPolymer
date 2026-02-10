@@ -71,9 +71,20 @@ LANGUAGES = {
 }
 
 # Language Selection
-st.sidebar.title("Language / 언어")
-lang_choice = st.sidebar.radio("Select Language", options=["English", "한국어"])
-txt = LANGUAGES[lang_choice]
+if 'language' not in st.session_state:
+    st.session_state['language'] = 'English'
+
+def toggle_language():
+    if st.session_state['language'] == 'English':
+        st.session_state['language'] = '한국어'
+    else:
+        st.session_state['language'] = 'English'
+
+col_dummy, col_lang = st.columns([0.85, 0.15])
+with col_lang:
+    st.button("English ⟷ 한국어", on_click=toggle_language)
+
+txt = LANGUAGES[st.session_state['language']]
 
 st.title(txt["title"])
 st.markdown(txt["description"])
@@ -288,3 +299,4 @@ if 'results' in st.session_state:
 
 st.divider()
 st.markdown(txt["footer"])
+st.caption("이 서비스는 세계화학공업(주)에서 개발중인 서비스입니다. 무단 복제 등 저작권을 침해하는 일체의 행동을 금지합니다.")
